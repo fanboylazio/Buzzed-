@@ -24,14 +24,18 @@ import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { ResponsibleNote } from '@/components/ResponsibleNote';
 import { useCreatePost } from '@/hooks/useFeed';
+import { useActiveEvent } from '@/context/ActiveEventProvider';
 import { colors, spacing, fontSize, radius } from '@/theme/colors';
 
 export default function NewPostScreen() {
   const router = useRouter();
   const createPost = useCreatePost();
+  const { activeEvent } = useActiveEvent();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [texto, setTexto] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Si hay un evento activo, la publicación se asocia a él (se puede quitar).
+  const [attachToEvent, setAttachToEvent] = useState(true);
 
   /** Opciones comunes del recorte/calidad de imagen. */
   const pickerOptions: ImagePicker.ImagePickerOptions = {
@@ -76,7 +80,11 @@ export default function NewPostScreen() {
       return;
     }
     try {
-      await createPost.mutateAsync({ localUri: imageUri, texto });
+      await createPost.mutateAsync({
+        localUri: imageUri,
+        texto,
+        eventId: activeEvent && attachToEvent ? activeEvent.id : null,
+      });
       router.back();
     } catch (e) {
       setError('No se pudo publicar. Inténtalo de nuevo.');
@@ -137,6 +145,23 @@ export default function NewPostScreen() {
             numberOfLines={3}
             style={styles.textArea}
           />
+
+          {/* Asociación a evento activo */}
+          {activeEvent ? (
+            <Pressable
+              style={styles.eventTag}
+              onPress={() => setAttachToEvent((v) => !v)}
+            >
+              <Ionicons
+                name={attachToEvent ? 'checkbox' : 'square-outline'}
+                size={20}
+                color={attachToEvent ? colors.primary : colors.textMuted}
+              />
+              <Text style={styles.eventTagText}>
+                Publicar en el evento «{activeEvent.nombre}»
+              </Text>
+            </Pressable>
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -244,5 +269,20 @@ const styles = StyleSheet.create({
   error: {
     color: colors.danger,
     fontSize: fontSize.sm,
+  },
+  eventTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  eventTagText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
 });

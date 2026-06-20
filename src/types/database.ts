@@ -119,6 +119,51 @@ export type CommentWithAuthor = PostComment & {
   autor: ProfileSummary;
 };
 
+// --- Fase 3: eventos, equipos y participación -------------------------------
+
+export type EventMember = {
+  id: string;
+  event_id: string;
+  usuario_id: string;
+  rol: 'creador' | 'miembro';
+  created_at: string;
+};
+
+export type Team = {
+  id: string;
+  event_id: string;
+  nombre: string;
+  tipo: TeamType;
+  created_at: string;
+};
+
+export type TeamMember = {
+  team_id: string;
+  usuario_id: string;
+  created_at: string;
+};
+
+/** Participante de un evento con su perfil resuelto. */
+export type EventMemberWithProfile = EventMember & {
+  usuario: ProfileSummary;
+};
+
+/** Equipo con sus miembros (perfiles resueltos). */
+export type TeamWithMembers = Team & {
+  miembros: ProfileSummary[];
+};
+
+/** Fila de "diario compartido": consumición de un evento con usuario y bebida. */
+export type EventConsumption = {
+  id: string;
+  usuario_id: string;
+  drink_type_id: number;
+  cantidad: number;
+  created_at: string;
+  usuario: ProfileSummary;
+  drink_type: { id: number; slug: DrinkSlug; nombre: string; icono: string };
+};
+
 /**
  * Tipo "Database" en el formato que espera supabase-js.
  * Solo se detallan las tablas usadas en Fase 1; el resto puede ampliarse.
@@ -149,9 +194,23 @@ export interface Database {
       };
       events: {
         Row: EventRow;
-        Insert: Omit<EventRow, 'id' | 'created_at'> & {
+        Insert: Omit<
+          EventRow,
+          | 'id'
+          | 'created_at'
+          | 'descripcion'
+          | 'tipo'
+          | 'fecha_inicio'
+          | 'fecha_fin'
+          | 'portada_url'
+        > & {
           id?: string;
           created_at?: string;
+          descripcion?: string | null;
+          tipo?: EventType;
+          fecha_inicio?: string;
+          fecha_fin?: string | null;
+          portada_url?: string | null;
         };
         Update: Partial<EventRow>;
         Relationships: [];
@@ -190,6 +249,32 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<PostComment>;
+        Relationships: [];
+      };
+      event_members: {
+        Row: EventMember;
+        Insert: Omit<EventMember, 'id' | 'created_at' | 'rol'> & {
+          id?: string;
+          created_at?: string;
+          rol?: 'creador' | 'miembro';
+        };
+        Update: Partial<EventMember>;
+        Relationships: [];
+      };
+      teams: {
+        Row: Team;
+        Insert: Omit<Team, 'id' | 'created_at' | 'tipo'> & {
+          id?: string;
+          created_at?: string;
+          tipo?: TeamType;
+        };
+        Update: Partial<Team>;
+        Relationships: [];
+      };
+      team_members: {
+        Row: TeamMember;
+        Insert: Omit<TeamMember, 'created_at'> & { created_at?: string };
+        Update: Partial<TeamMember>;
         Relationships: [];
       };
     };

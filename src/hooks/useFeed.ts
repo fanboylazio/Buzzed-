@@ -11,6 +11,7 @@ import { uploadPostPhoto, signPhotoUrls, deletePostPhoto } from '@/lib/storage';
 import type { FeedPost, ProfileSummary } from '@/types/database';
 
 export const feedKey = (userId: string | undefined) => ['feed', userId] as const;
+export const eventFeedKey = (eventId: string) => ['event-feed', eventId] as const;
 
 /** Forma cruda que devuelve la consulta del feed antes de normalizar. */
 type RawFeedRow = {
@@ -25,14 +26,20 @@ type RawFeedRow = {
   post_comments: { count: number }[];
 };
 
-/** Lista el feed visible para el usuario, con métricas y URLs firmadas. */
-export function useFeed() {
+/**
+ * Lista un feed con métricas y URLs firmadas.
+ *  - Sin eventId: feed de inicio (mis publicaciones + las de mis amigos).
+ *  - Con eventId: feed del evento (publicaciones asociadas a ese evento).
+ */
+export function useFeed(eventId?: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: feedKey(user?.id),
+    queryKey: eventId ? eventFeedKey(eventId) : feedKey(user?.id),
     enabled: !!user?.id,
     queryFn: async (): Promise<FeedPost[]> => {
-      const { data, error } = await supabase
+      const me = user!.id;
+
+      let query = supabase
         .from('posts')
         .select(
           `id, autor_id, evento_id, foto_path, texto, created_at,
@@ -42,10 +49,28 @@ export function useFeed() {
         )
         .order('created_at', { ascending: false });
 
+      if (eventId) {
+        // Feed del evento: solo publicaciones de ese evento.
+        query = query.eq('evento_id', eventId);
+      } else {
+        // Feed de inicio: limitamos a mí + mis amigos (aceptados).
+        const { data: fr, error: frError } = await supabase
+          .from('friendships')
+          .select('requester_id, addressee_id')
+          .eq('status', 'aceptada')
+          .or(`requester_id.eq.${me},addressee_id.eq.${me}`);
+        if (frError) throw frError;
+        const ids = new Set<string>([me]);
+        for (const f of fr ?? []) {
+          ids.add(f.requester_id === me ? f.addressee_id : f.requester_id);
+        }
+        query = query.in('autor_id', [...ids]);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       const rows = (data ?? []) as unknown as RawFeedRow[];
-      const me = user!.id;
 
       // Normalizamos a FeedPost (métricas calculadas en cliente).
       const posts: FeedPost[] = rows.map((row) => ({
@@ -118,6 +143,7 @@ export function useToggleLike() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: feedKey(user?.id) });
+      qc.invalidateQueries({ queryKey: ['event-feed'] });
     },
   });
 }
@@ -128,18 +154,30 @@ export function useCreatePost() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ localUri, texto }: { localUri: string; texto?: string }) => {
+    mutationFn: async ({
+      localUri,
+      texto,
+      eventId,
+    }: {
+      localUri: string;
+      texto?: string;
+      eventId?: string | null;
+    }) => {
       if (!user?.id) throw new Error('No hay sesión activa.');
       const fotoPath = await uploadPostPhoto(user.id, localUri);
       const { error } = await supabase.from('posts').insert({
         autor_id: user.id,
         foto_path: fotoPath,
         texto: texto?.trim() ? texto.trim() : null,
+        evento_id: eventId ?? null,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: feedKey(user?.id) });
+      if (vars.eventId) {
+        qc.invalidateQueries({ queryKey: eventFeedKey(vars.eventId) });
+      }
     },
   });
 }
@@ -162,6 +200,7 @@ export function useDeletePost() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: feedKey(user?.id) });
+      qc.invalidateQueries({ queryKey: ['event-feed'] });
     },
   });
 }

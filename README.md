@@ -4,8 +4,8 @@ App móvil **privada** para tu cuadrilla: una especie de "Strava de salir de
 fiesta". Registra consumiciones, lleva tus estadísticas y (en próximas fases)
 organiza eventos, equipos y un feed social con fotos.
 
-> **Fase actual: 2** — Amigos (solicitud/aceptación) + feed social con fotos,
-> likes y comentarios, en vivo con Realtime. Ver [Roadmap](#-roadmap).
+> **Fase actual: 3** — Eventos (públicos/privados), equipos/parejas/tríos y
+> estadísticas por evento como *diario compartido*. Ver [Roadmap](#-roadmap).
 
 ---
 
@@ -64,6 +64,9 @@ npm install
    - `0002_phase2_social.sql`: amistades y feed (`friendships`, `posts`,
      `post_likes`, `post_comments`), su **RLS**, el **bucket privado**
      `post-photos` para las fotos y la activación de **Realtime**.
+   - `0003_phase3_events.sql`: eventos y equipos (`events`, `event_members`,
+     `teams`, `team_members`), funciones de visibilidad, **RLS**, vinculación de
+     consumiciones/posts a eventos (diario compartido) y Realtime.
 3. (Opcional, recomendado para pruebas rápidas) En **Authentication →
    Providers → Email**, desactiva *"Confirm email"* para poder entrar sin
    confirmar el correo.
@@ -137,15 +140,17 @@ orígenes desconocidos"* para instalarlo.
 app/                      # Rutas (expo-router)
   _layout.tsx             # Providers globales + gate de auth (Stack raíz)
   (auth)/                 # Onboarding, login, registro (+ gate +18)
-  (tabs)/                 # Feed · Registrar · Stats · Perfil
+  (tabs)/                 # Feed · Registrar · Eventos · Stats · Perfil
   post/new.tsx            # Crear publicación (modal, cámara/galería)
   post/[id].tsx           # Detalle de publicación + comentarios
+  event/new.tsx           # Crear evento (modal)
+  event/[id].tsx          # Detalle: gente, equipos, feed y diario del evento
   friends.tsx             # Buscar/añadir amigos y solicitudes
 src/
   components/             # Button, Card, Avatar, PostCard, DrinkChip, BarChart...
-  context/AuthProvider    # Sesión de Supabase en contexto
-  hooks/                  # useConsumptions, useFeed, useFriends, usePostComments...
-  lib/                    # supabase, queryClient, storage, stats, format
+  context/                # AuthProvider, ActiveEventProvider
+  hooks/                  # useConsumptions, useFeed, useFriends, useEvents, useTeams...
+  lib/                    # supabase, queryClient, storage, stats, eventStats, format
   theme/colors.ts         # Tokens de marca
   types/database.ts       # Tipos de la BD
 supabase/migrations/      # SQL con esquema + RLS + seed + Storage + Realtime
@@ -161,6 +166,10 @@ scripts/gen-assets.js     # Genera icono/splash placeholder
 - **Fotos en bucket privado** (`post-photos`): se suben a la carpeta del usuario
   y se sirven con **URLs firmadas** temporales; solo el autor y sus amigos
   pueden generarlas. Se pide **permiso de cámara/galería** antes de usarlas.
+- **Eventos:** los públicos los ve todo el grupo; los privados, solo sus
+  miembros. Las consumiciones y publicaciones **asociadas a un evento** son
+  visibles para sus miembros (el *diario compartido*), pero lo personal sigue
+  siendo privado.
 - Sesión persistida de forma cifrada con `expo-secure-store`.
 - **Gate +18** en el registro (fecha de nacimiento + confirmación).
 - Avisos de **consumo responsable** repartidos por la app sin estorbar.
@@ -176,8 +185,8 @@ scripts/gen-assets.js     # Genera icono/splash placeholder
       estadísticas personales + APK.
 - [x] **Fase 2:** Amigos (solicitud/aceptación) + feed con fotos
       (likes/comentarios) en vivo con Realtime.
-- [ ] **Fase 3:** Eventos (públicos/privados) + equipos/parejas/tríos + stats
-      por evento.
+- [x] **Fase 3:** Eventos (públicos/privados) + equipos/parejas/tríos + stats
+      por evento como *diario compartido* (informativo, sin ranking).
 - [ ] **Fase 4:** Pulido de UI/marca, gráficas, rendimiento y notificaciones.
 
 ---

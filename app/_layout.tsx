@@ -13,6 +13,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { AuthProvider, useAuth } from '@/context/AuthProvider';
+import { ActiveEventProvider } from '@/context/ActiveEventProvider';
 import { colors } from '@/theme/colors';
 
 /** Redirige según el estado de sesión. */
@@ -76,6 +77,19 @@ function AuthGate() {
           headerTitleStyle: { color: colors.text },
         }}
       />
+      {/* Crear evento: modal. */}
+      <Stack.Screen name="event/new" options={{ presentation: 'modal' }} />
+      {/* Detalle de evento: cabecera oscura. */}
+      <Stack.Screen
+        name="event/[id]"
+        options={{
+          headerShown: true,
+          title: 'Evento',
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { color: colors.text },
+        }}
+      />
     </Stack>
   );
 }
@@ -85,8 +99,10 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <StatusBar style="light" />
-          <AuthGate />
+          <ActiveEventProvider>
+            <StatusBar style="light" />
+            <AuthGate />
+          </ActiveEventProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
