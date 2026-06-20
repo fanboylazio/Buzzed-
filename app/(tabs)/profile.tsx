@@ -5,7 +5,16 @@
  * de usuario y cerrar sesión.
  */
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  Switch,
+  Alert,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
@@ -16,8 +25,13 @@ import { useAuth } from '@/context/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { useConsumptions } from '@/hooks/useConsumptions';
 import { useFriendsDerived } from '@/hooks/useFriends';
+import {
+  getRemindersEnabled,
+  setRemindersEnabled,
+  scheduleNightSummary,
+} from '@/lib/notifications';
 import { totalUnits } from '@/lib/stats';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -29,11 +43,32 @@ export default function ProfileScreen() {
 
   const [username, setUsername] = useState('');
   const [saved, setSaved] = useState(false);
+  const [reminders, setReminders] = useState(false);
 
   // Sincroniza el input cuando llega el perfil.
   useEffect(() => {
     if (profile.data?.username) setUsername(profile.data.username);
   }, [profile.data?.username]);
+
+  // Estado inicial de los recordatorios.
+  useEffect(() => {
+    getRemindersEnabled().then(setReminders);
+  }, []);
+
+  /** Activa/desactiva los recordatorios locales (pide permiso al activar). */
+  async function toggleReminders(value: boolean) {
+    const ok = await setRemindersEnabled(value);
+    setReminders(ok);
+    if (value && !ok) {
+      Alert.alert(
+        'Permiso necesario',
+        'Activa las notificaciones de Buzzed en los ajustes del sistema para recibir recordatorios.',
+      );
+    } else if (ok) {
+      // Programamos el resumen de la mañana siguiente.
+      scheduleNightSummary().catch(() => {});
+    }
+  }
 
   const totalLifetime = totalUnits(consumptions.data ?? []);
   const initial = (profile.data?.username ?? user?.email ?? '?')
@@ -111,6 +146,23 @@ export default function ProfileScreen() {
           />
         </Card>
 
+        {/* Notificaciones / recordatorios */}
+        <Card style={styles.reminderCard}>
+          <Ionicons name="notifications-outline" size={24} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.navTitle}>Recordatorios</Text>
+            <Text style={styles.navSub}>
+              Avisos de consumo responsable y resumen de la noche.
+            </Text>
+          </View>
+          <Switch
+            value={reminders}
+            onValueChange={toggleReminders}
+            trackColor={{ false: colors.surfaceAlt, true: colors.primary }}
+            thumbColor={colors.text}
+          />
+        </Card>
+
         <Button label="Cerrar sesión" variant="danger" onPress={signOut} />
 
         <Text style={styles.footer}>
@@ -150,7 +202,7 @@ const styles = StyleSheet.create({
   name: {
     color: colors.text,
     fontSize: fontSize.xl,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
   },
   email: {
     color: colors.textMuted,
@@ -162,6 +214,11 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  reminderCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,

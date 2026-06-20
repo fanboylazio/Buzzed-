@@ -4,7 +4,12 @@
  * El feed muestra mis publicaciones y las de mis amigos (la visibilidad la
  * impone RLS). Las fotos se sirven con URLs firmadas generadas al vuelo.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthProvider';
 import { uploadPostPhoto, signPhotoUrls, deletePostPhoto } from '@/lib/storage';
@@ -36,6 +41,7 @@ export function useFeed(eventId?: string) {
   return useQuery({
     queryKey: eventId ? eventFeedKey(eventId) : feedKey(user?.id),
     enabled: !!user?.id,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<FeedPost[]> => {
       const me = user!.id;
 

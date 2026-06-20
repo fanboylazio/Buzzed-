@@ -20,7 +20,7 @@ import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { useCreateEvent } from '@/hooks/useEvents';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 import type { EventType } from '@/types/database';
 
 /** Convierte "DD/MM/AAAA" a ISO al final del día, o null si no es válida. */
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   scroll: {
     gap: spacing.lg,

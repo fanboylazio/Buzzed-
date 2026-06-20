@@ -4,8 +4,9 @@ App móvil **privada** para tu cuadrilla: una especie de "Strava de salir de
 fiesta". Registra consumiciones, lleva tus estadísticas y (en próximas fases)
 organiza eventos, equipos y un feed social con fotos.
 
-> **Fase actual: 3** — Eventos (públicos/privados), equipos/parejas/tríos y
-> estadísticas por evento como *diario compartido*. Ver [Roadmap](#-roadmap).
+> **Estado: las 4 fases completas.** Fase 4 = pulido de UI/marca (tipografía
+> Inter), gráficas (barras + anillo), rendimiento y notificaciones locales.
+> Ver [Roadmap](#-roadmap).
 
 ---
 
@@ -172,7 +173,10 @@ scripts/gen-assets.js     # Genera icono/splash placeholder
   siendo privado.
 - Sesión persistida de forma cifrada con `expo-secure-store`.
 - **Gate +18** en el registro (fecha de nacimiento + confirmación).
-- Avisos de **consumo responsable** repartidos por la app sin estorbar.
+- Avisos de **consumo responsable** repartidos por la app sin estorbar, más
+  **notificaciones locales** opcionales (se activan en Perfil): aviso de
+  hidratación y recordatorio del "resumen de la noche". Son 100% locales: no
+  hay servidor de push ni se envían datos a terceros.
 
 > **Principio de producto:** las estadísticas son un **registro informativo**,
 > no un marcador competitivo. No hay ranking ni trofeos por "quien más bebe".
@@ -187,7 +191,10 @@ scripts/gen-assets.js     # Genera icono/splash placeholder
       (likes/comentarios) en vivo con Realtime.
 - [x] **Fase 3:** Eventos (públicos/privados) + equipos/parejas/tríos + stats
       por evento como *diario compartido* (informativo, sin ranking).
-- [ ] **Fase 4:** Pulido de UI/marca, gráficas, rendimiento y notificaciones.
+- [x] **Fase 4:** Pulido de UI/marca (tipografía Inter, feedback háptico),
+      gráficas (barras con valores + anillo de distribución), rendimiento
+      (memoización, `keepPreviousData`) y **notificaciones locales** (consumo
+      responsable + resumen de la noche).
 
 ---
 

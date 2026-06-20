@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useEvents, type EventListItem } from '@/hooks/useEvents';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 
 /** Formatea el rango de fechas de un evento. */
 function formatDates(item: EventListItem): string {
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxl,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
   },
   newBtn: {
     width: 40,

@@ -6,7 +6,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 
 export default function Welcome() {
   const router = useRouter();
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.display,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
     letterSpacing: -1,
   },
   subtitle: {

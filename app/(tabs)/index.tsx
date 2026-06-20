@@ -23,7 +23,7 @@ import { PostCard } from '@/components/PostCard';
 import { useAuth } from '@/context/AuthProvider';
 import { useFeed, useToggleLike, useDeletePost } from '@/hooks/useFeed';
 import { useFeedRealtime } from '@/hooks/useFeedRealtime';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 import type { FeedPost } from '@/types/database';
 
 export default function FeedScreen() {
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxl,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
     letterSpacing: -0.5,
   },
   newBtn: {

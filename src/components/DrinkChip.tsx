@@ -13,7 +13,7 @@ interface DrinkChipProps {
   busy?: boolean;
 }
 
-export function DrinkChip({ drink, onPress, busy }: DrinkChipProps) {
+function DrinkChipBase({ drink, onPress, busy }: DrinkChipProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -35,6 +35,8 @@ export function DrinkChip({ drink, onPress, busy }: DrinkChipProps) {
     </Pressable>
   );
 }
+
+export const DrinkChip = React.memo(DrinkChipBase);
 
 const styles = StyleSheet.create({
   card: {

@@ -66,4 +66,20 @@ export const fontSize = {
   display: 36,
 } as const;
 
+/**
+ * Familias tipográficas de marca (Inter).
+ *
+ * Se aplican a titulares y UI destacada para un look moderno. En Android cada
+ * peso es una familia con nombre propio (Inter no responde a fontWeight), por
+ * eso se referencian por nombre explícito. El texto de cuerpo usa la fuente del
+ * sistema, que ya es legible y rápida.
+ */
+export const fonts = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extrabold: 'Inter_800ExtraBold',
+} as const;
+
 export type ColorToken = keyof typeof colors;

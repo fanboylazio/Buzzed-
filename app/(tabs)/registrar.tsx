@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { DrinkChip } from '@/components/DrinkChip';
@@ -29,8 +30,9 @@ import {
 } from '@/hooks/useConsumptions';
 import { useEvents } from '@/hooks/useEvents';
 import { useActiveEvent } from '@/context/ActiveEventProvider';
+import { notifyHydration } from '@/lib/notifications';
 import { logsOfTonight, totalUnits } from '@/lib/stats';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 import type { ConsumptionLogWithDrink } from '@/types/database';
 
 export default function RegisterScreen() {
@@ -52,6 +54,24 @@ export default function RegisterScreen() {
     () => (events.data ?? []).filter((e) => e.amMember && e.isActive),
     [events.data],
   );
+
+  /**
+   * Registra +1 de una bebida: feedback háptico inmediato y, si la cuenta de la
+   * noche cruza un múltiplo de 5, un aviso suave de hidratación (si están
+   * activados los recordatorios).
+   */
+  function logDrink(drinkId: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const predicted = tonightTotal + 1;
+    addConsumption.mutate({
+      drink_type_id: drinkId,
+      cantidad: 1,
+      evento_id: activeEvent?.id ?? null,
+    });
+    if (predicted > 0 && predicted % 5 === 0) {
+      notifyHydration().catch(() => {});
+    }
+  }
 
   /** Cambia la cantidad de un registro reciente (edición rápida). */
   function adjust(log: ConsumptionLogWithDrink, delta: number) {
@@ -147,13 +167,7 @@ export default function RegisterScreen() {
                 key={drink.id}
                 drink={drink}
                 busy={addConsumption.isPending}
-                onPress={() =>
-                  addConsumption.mutate({
-                    drink_type_id: drink.id,
-                    cantidad: 1,
-                    evento_id: activeEvent?.id ?? null,
-                  })
-                }
+                onPress={() => logDrink(drink.id)}
               />
             ))}
           </View>
@@ -229,7 +243,7 @@ const styles = StyleSheet.create({
   greeting: {
     color: colors.text,
     fontSize: fontSize.xxl,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
   },
   tonightCard: {
     flexDirection: 'row',

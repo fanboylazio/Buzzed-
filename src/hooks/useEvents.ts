@@ -1,7 +1,12 @@
 /**
  * Hooks de eventos (Fase 3): listar, ver, crear, apuntarse/salir y borrar.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthProvider';
 import type {
@@ -35,6 +40,7 @@ export function useEvents() {
   return useQuery({
     queryKey: eventsKey(user?.id),
     enabled: !!user?.id,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<EventListItem[]> => {
       const { data, error } = await supabase
         .from('events')

@@ -25,7 +25,7 @@ import { TextField } from '@/components/TextField';
 import { ResponsibleNote } from '@/components/ResponsibleNote';
 import { useCreatePost } from '@/hooks/useFeed';
 import { useActiveEvent } from '@/context/ActiveEventProvider';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 
 export default function NewPostScreen() {
   const router = useRouter();
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   scroll: {
     gap: spacing.lg,

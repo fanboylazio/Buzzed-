@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 import { colors, spacing, fontSize } from '@/theme/colors';
 
 export interface BarDatum {
@@ -19,9 +19,10 @@ interface BarChartProps {
   height?: number;
 }
 
-export function BarChart({ data, height = 140 }: BarChartProps) {
+function BarChartBase({ data, height = 150 }: BarChartProps) {
   const max = Math.max(1, ...data.map((d) => d.value));
-  const barAreaHeight = height - 24; // reservar espacio para etiquetas
+  const labelSpace = 18; // hueco superior para el valor
+  const barAreaHeight = height - 24 - labelSpace;
 
   return (
     <View>
@@ -30,18 +31,33 @@ export function BarChart({ data, height = 140 }: BarChartProps) {
           const barWidthPct = 100 / data.length;
           const barHeight = (d.value / max) * barAreaHeight;
           const x = `${i * barWidthPct + barWidthPct * 0.2}%`;
+          const cx = `${i * barWidthPct + barWidthPct * 0.5}%`;
           const w = `${barWidthPct * 0.6}%`;
-          const y = barAreaHeight - barHeight;
+          const y = labelSpace + barAreaHeight - barHeight;
           return (
-            <Rect
-              key={i}
-              x={x}
-              y={y}
-              width={w}
-              height={Math.max(barHeight, 2)}
-              rx={4}
-              fill={d.value > 0 ? colors.primary : colors.border}
-            />
+            <React.Fragment key={i}>
+              {/* Valor encima de la barra (solo si hay datos) */}
+              {d.value > 0 ? (
+                <SvgText
+                  x={cx}
+                  y={y - 5}
+                  fill={colors.textMuted}
+                  fontSize={11}
+                  fontWeight="700"
+                  textAnchor="middle"
+                >
+                  {d.value}
+                </SvgText>
+              ) : null}
+              <Rect
+                x={x}
+                y={y}
+                width={w}
+                height={Math.max(barHeight, 2)}
+                rx={4}
+                fill={d.value > 0 ? colors.primary : colors.border}
+              />
+            </React.Fragment>
           );
         })}
       </Svg>
@@ -55,6 +71,9 @@ export function BarChart({ data, height = 140 }: BarChartProps) {
     </View>
   );
 }
+
+// Memoizada: la serie cambia poco, evitamos repintar el SVG sin necesidad.
+export const BarChart = React.memo(BarChartBase);
 
 const styles = StyleSheet.create({
   labels: {

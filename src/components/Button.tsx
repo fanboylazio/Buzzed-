@@ -10,7 +10,7 @@ import {
   Text,
   type ViewStyle,
 } from 'react-native';
-import { colors, radius, spacing, fontSize } from '@/theme/colors';
+import { colors, radius, spacing, fontSize, fonts } from '@/theme/colors';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   pressed: {
     opacity: 0.85,

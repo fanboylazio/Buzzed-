@@ -10,6 +10,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
 import { BarChart } from '@/components/BarChart';
+import { DonutChart } from '@/components/DonutChart';
 import { ResponsibleNote } from '@/components/ResponsibleNote';
 import { useConsumptions } from '@/hooks/useConsumptions';
 import {
@@ -19,7 +20,7 @@ import {
   dailySeries,
   nightKey,
 } from '@/lib/stats';
-import { colors, spacing, fontSize, radius } from '@/theme/colors';
+import { colors, spacing, fontSize, radius, fonts } from '@/theme/colors';
 import type { ConsumptionLogWithDrink } from '@/types/database';
 
 export default function StatsScreen() {
@@ -69,20 +70,21 @@ export default function StatsScreen() {
           </View>
         </Card>
 
-        {/* Totales por tipo (histórico) */}
+        {/* Totales por tipo (histórico) con distribución en anillo */}
         <Card>
-          <Text style={styles.cardLabel}>Totales por tipo</Text>
+          <Text style={styles.cardLabel}>Distribución por tipo</Text>
           {byType.length === 0 ? (
             <Text style={styles.empty}>Todavía no hay datos.</Text>
           ) : (
-            <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
-              {byType.map((t) => (
-                <View key={t.slug} style={styles.typeRow}>
-                  <Text style={styles.typeIcon}>{t.icono}</Text>
-                  <Text style={styles.typeName}>{t.nombre}</Text>
-                  <Text style={styles.typeTotal}>{t.total}</Text>
-                </View>
-              ))}
+            <View style={{ marginTop: spacing.md }}>
+              <DonutChart
+                data={byType.map((t) => ({
+                  label: `${t.icono} ${t.nombre}`,
+                  value: t.total,
+                }))}
+                centerValue={byType.reduce((a, t) => a + t.total, 0)}
+                centerLabel="total"
+              />
             </View>
           )}
         </Card>
@@ -155,7 +157,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxl,
-    fontWeight: '800',
+    fontFamily: fonts.extrabold,
   },
   summaryCard: {
     alignItems: 'flex-start',

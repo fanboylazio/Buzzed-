@@ -11,7 +11,7 @@ interface AvatarProps {
   size?: number;
 }
 
-export function Avatar({ username, avatarUrl, size = 40 }: AvatarProps) {
+function AvatarBase({ username, avatarUrl, size = 40 }: AvatarProps) {
   const initial = (username ?? '?').charAt(0).toUpperCase();
   const dimension = { width: size, height: size, borderRadius: size / 2 };
 
@@ -25,6 +25,8 @@ export function Avatar({ username, avatarUrl, size = 40 }: AvatarProps) {
     </View>
   );
 }
+
+export const Avatar = React.memo(AvatarBase);
 
 const styles = StyleSheet.create({
   image: {

@@ -11,10 +11,18 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
 import { queryClient } from '@/lib/queryClient';
 import { AuthProvider, useAuth } from '@/context/AuthProvider';
 import { ActiveEventProvider } from '@/context/ActiveEventProvider';
-import { colors } from '@/theme/colors';
+import { colors, fonts } from '@/theme/colors';
 
 /** Redirige según el estado de sesión. */
 function AuthGate() {
@@ -63,7 +71,7 @@ function AuthGate() {
           title: 'Publicación',
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
-          headerTitleStyle: { color: colors.text },
+          headerTitleStyle: { color: colors.text, fontFamily: fonts.bold },
         }}
       />
       {/* Amigos: cabecera oscura. */}
@@ -74,7 +82,7 @@ function AuthGate() {
           title: 'Amigos',
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
-          headerTitleStyle: { color: colors.text },
+          headerTitleStyle: { color: colors.text, fontFamily: fonts.bold },
         }}
       />
       {/* Crear evento: modal. */}
@@ -87,7 +95,7 @@ function AuthGate() {
           title: 'Evento',
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
-          headerTitleStyle: { color: colors.text },
+          headerTitleStyle: { color: colors.text, fontFamily: fonts.bold },
         }}
       />
     </Stack>
@@ -95,6 +103,29 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  // Cargamos la tipografía de marca (Inter) antes de pintar la app.
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>

@@ -6,7 +6,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { timeAgo } from '@/lib/format';
-import { colors, radius, spacing, fontSize } from '@/theme/colors';
+import { colors, radius, spacing, fontSize, fonts } from '@/theme/colors';
 import type { FeedPost } from '@/types/database';
 
 interface PostCardProps {
@@ -17,7 +17,7 @@ interface PostCardProps {
   onDelete?: () => void;
 }
 
-export function PostCard({
+function PostCardBase({
   post,
   isOwn,
   onToggleLike,
@@ -84,6 +84,9 @@ export function PostCard({
   );
 }
 
+// Memoizada para no repintar todas las tarjetas al actualizar el feed.
+export const PostCard = React.memo(PostCardBase);
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
@@ -103,7 +106,7 @@ const styles = StyleSheet.create({
   username: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   time: {
     color: colors.textFaint,
