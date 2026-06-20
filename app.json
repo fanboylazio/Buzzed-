@@ -32,7 +32,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Buzzed necesita acceso a tus fotos para compartir tus copas en el feed.",
+          "cameraPermission": "Buzzed necesita acceso a la cámara para hacer fotos de tus copas."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

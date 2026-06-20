@@ -1,251 +1,190 @@
 /**
- * Pantalla "Registrar" — NÚCLEO de Buzzed (Fase 1).
+ * Pantalla "Feed" — home social (Fase 2).
  *
- * Registro rápido de consumiciones: una rejilla de botones grandes; tocar uno
- * añade +1 al instante (rápido, de noche, con una mano). Debajo, el resumen de
- * la noche y los registros recientes con edición (+/-) y borrado.
+ * Muestra las publicaciones propias y de los amigos (foto + texto), con likes
+ * y acceso a comentarios. Se actualiza en vivo con Realtime y permite crear una
+ * publicación nueva.
  */
-import { useMemo } from 'react';
+import { useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Pressable,
   ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
-import { Card } from '@/components/Card';
-import { DrinkChip } from '@/components/DrinkChip';
-import { ResponsibleNote } from '@/components/ResponsibleNote';
-import { useDrinkTypes } from '@/hooks/useDrinkTypes';
-import {
-  useConsumptions,
-  useAddConsumption,
-  useDeleteConsumption,
-  useUpdateConsumption,
-} from '@/hooks/useConsumptions';
-import { logsOfTonight, totalUnits } from '@/lib/stats';
+import { PostCard } from '@/components/PostCard';
+import { useAuth } from '@/context/AuthProvider';
+import { useFeed, useToggleLike, useDeletePost } from '@/hooks/useFeed';
+import { useFeedRealtime } from '@/hooks/useFeedRealtime';
 import { colors, spacing, fontSize, radius } from '@/theme/colors';
-import type { ConsumptionLogWithDrink } from '@/types/database';
+import type { FeedPost } from '@/types/database';
 
-export default function RegisterScreen() {
-  const drinkTypes = useDrinkTypes();
-  const consumptions = useConsumptions();
-  const addConsumption = useAddConsumption();
-  const deleteConsumption = useDeleteConsumption();
-  const updateConsumption = useUpdateConsumption();
+export default function FeedScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const feed = useFeed();
+  const toggleLike = useToggleLike();
+  const deletePost = useDeletePost();
 
-  const logs = consumptions.data ?? [];
-  const tonight = useMemo(() => logsOfTonight(logs), [logs]);
-  const tonightTotal = totalUnits(tonight);
-  const recent = logs.slice(0, 10);
+  // Suscripción en vivo al feed.
+  useFeedRealtime();
 
-  /** Cambia la cantidad de un registro reciente (edición rápida). */
-  function adjust(log: ConsumptionLogWithDrink, delta: number) {
-    const next = log.cantidad + delta;
-    if (next <= 0) {
-      deleteConsumption.mutate(log.id);
-    } else {
-      updateConsumption.mutate({ id: log.id, cantidad: next });
-    }
-  }
+  const confirmDelete = useCallback(
+    (post: FeedPost) => {
+      Alert.alert('Borrar publicación', '¿Seguro que quieres borrarla?', [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Borrar',
+          style: 'destructive',
+          onPress: () =>
+            deletePost.mutate({ postId: post.id, fotoPath: post.foto_path }),
+        },
+      ]);
+    },
+    [deletePost],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: FeedPost }) => (
+      <PostCard
+        post={item}
+        isOwn={item.autor_id === user?.id}
+        onToggleLike={() =>
+          toggleLike.mutate({ postId: item.id, likedByMe: item.likedByMe })
+        }
+        onPressComments={() => router.push(`/post/${item.id}`)}
+        onDelete={() => confirmDelete(item)}
+      />
+    ),
+    [user?.id, toggleLike, router, confirmDelete],
+  );
 
   return (
     <Screen padded={false}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Cabecera + resumen de la noche */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>¿Qué te tomas?</Text>
-          <Card style={styles.tonightCard}>
-            <View>
-              <Text style={styles.tonightLabel}>Esta noche</Text>
-              <Text style={styles.tonightValue}>
-                {tonightTotal} {tonightTotal === 1 ? 'consumición' : 'consumiciones'}
-              </Text>
-            </View>
-            <Ionicons name="moon" size={28} color={colors.primary} />
-          </Card>
-        </View>
+      {/* Cabecera */}
+      <View style={styles.topBar}>
+        <Text style={styles.title}>Buzzed</Text>
+        <Pressable
+          style={styles.newBtn}
+          onPress={() => router.push('/post/new')}
+          hitSlop={8}
+        >
+          <Ionicons name="add" size={22} color={colors.background} />
+        </Pressable>
+      </View>
 
-        {/* Rejilla de registro rápido */}
-        {drinkTypes.isLoading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-        ) : drinkTypes.isError ? (
+      {feed.isLoading ? (
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      ) : feed.isError ? (
+        <View style={styles.center}>
           <Text style={styles.errorText}>
-            No se pudo cargar el catálogo. Revisa tu conexión y la configuración de Supabase.
+            No se pudo cargar el feed. Revisa tu conexión y la configuración de Supabase.
           </Text>
-        ) : (
-          <View style={styles.grid}>
-            {(drinkTypes.data ?? []).map((drink) => (
-              <DrinkChip
-                key={drink.id}
-                drink={drink}
-                busy={addConsumption.isPending}
-                onPress={() =>
-                  addConsumption.mutate({ drink_type_id: drink.id, cantidad: 1 })
-                }
-              />
-            ))}
-          </View>
-        )}
-
-        <ResponsibleNote />
-
-        {/* Registros recientes con edición / borrado */}
-        <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Últimos registros</Text>
-          {recent.length === 0 ? (
-            <Text style={styles.empty}>
-              Aún no hay registros. Toca una bebida para empezar tu noche.
-            </Text>
-          ) : (
-            recent.map((log) => (
-              <Card key={log.id} style={styles.recentRow}>
-                <Text style={styles.recentIcon}>{log.drink_type.icono}</Text>
-                <View style={styles.recentInfo}>
-                  <Text style={styles.recentName}>{log.drink_type.nombre}</Text>
-                  <Text style={styles.recentTime}>{formatTime(log.created_at)}</Text>
-                </View>
-
-                <View style={styles.stepper}>
-                  <Pressable
-                    style={styles.stepBtn}
-                    onPress={() => adjust(log, -1)}
-                    hitSlop={8}
-                  >
-                    <Ionicons name="remove" size={18} color={colors.text} />
-                  </Pressable>
-                  <Text style={styles.qty}>{log.cantidad}</Text>
-                  <Pressable
-                    style={styles.stepBtn}
-                    onPress={() => adjust(log, +1)}
-                    hitSlop={8}
-                  >
-                    <Ionicons name="add" size={18} color={colors.text} />
-                  </Pressable>
-                </View>
-
-                <Pressable
-                  style={styles.trashBtn}
-                  onPress={() => deleteConsumption.mutate(log.id)}
-                  hitSlop={8}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                </Pressable>
-              </Card>
-            ))
-          )}
         </View>
-      </ScrollView>
+      ) : (
+        <FlatList
+          data={feed.data ?? []}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.lg }} />}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={feed.isRefetching}
+              onRefresh={feed.refetch}
+              tintColor={colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.center}>
+              <Ionicons name="beer-outline" size={48} color={colors.textFaint} />
+              <Text style={styles.emptyTitle}>Tu feed está vacío</Text>
+              <Text style={styles.emptyText}>
+                Comparte tu primera copa o añade amigos para ver sus publicaciones.
+              </Text>
+              <Pressable
+                style={styles.emptyBtn}
+                onPress={() => router.push('/post/new')}
+              >
+                <Text style={styles.emptyBtnText}>Crear publicación</Text>
+              </Pressable>
+            </View>
+          }
+        />
+      )}
     </Screen>
   );
 }
 
-/** Formatea la hora de un timestamp ISO como HH:MM. */
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
 const styles = StyleSheet.create({
-  scroll: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  header: {
-    gap: spacing.md,
-  },
-  greeting: {
-    color: colors.text,
-    fontSize: fontSize.xxl,
-    fontWeight: '800',
-  },
-  tonightCard: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  tonightLabel: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-  },
-  tonightValue: {
+  title: {
     color: colors.text,
-    fontSize: fontSize.xl,
+    fontSize: fontSize.xxl,
     fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
+  newBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  list: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+    flexGrow: 1,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
   },
   errorText: {
     color: colors.danger,
     fontSize: fontSize.sm,
+    textAlign: 'center',
   },
-  recentSection: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
+  emptyTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: '700',
-    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
   },
-  empty: {
-    color: colors.textFaint,
+  emptyText: {
+    color: colors.textMuted,
     fontSize: fontSize.sm,
-    paddingVertical: spacing.md,
-  },
-  recentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  recentIcon: { fontSize: 28 },
-  recentInfo: { flex: 1 },
-  recentName: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontWeight: '600',
-  },
-  recentTime: {
-    color: colors.textFaint,
-    fontSize: fontSize.xs,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  stepBtn: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qty: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontWeight: '700',
-    minWidth: 20,
     textAlign: 'center',
   },
-  trashBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+  emptyBtn: {
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  emptyBtnText: {
+    color: colors.background,
+    fontWeight: '700',
+    fontSize: fontSize.md,
   },
 });

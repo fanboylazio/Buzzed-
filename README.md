@@ -4,8 +4,8 @@ App móvil **privada** para tu cuadrilla: una especie de "Strava de salir de
 fiesta". Registra consumiciones, lleva tus estadísticas y (en próximas fases)
 organiza eventos, equipos y un feed social con fotos.
 
-> **Fase actual: 1 (MVP)** — Auth + perfil + registro de consumiciones +
-> estadísticas personales + APK funcionando. Ver [Roadmap](#-roadmap).
+> **Fase actual: 2** — Amigos (solicitud/aceptación) + feed social con fotos,
+> likes y comentarios, en vivo con Realtime. Ver [Roadmap](#-roadmap).
 
 ---
 
@@ -56,11 +56,14 @@ npm install
 ### 2. Configura Supabase
 
 1. Crea un proyecto nuevo en [Supabase](https://supabase.com).
-2. En el **SQL Editor**, ejecuta el contenido de
-   [`supabase/migrations/0001_phase1_init.sql`](supabase/migrations/0001_phase1_init.sql).
-   Esto crea las tablas (`profiles`, `drink_types`, `consumption_logs`), activa
-   **Row Level Security**, crea el trigger que genera el perfil al registrarse y
-   siembra el catálogo de bebidas.
+2. En el **SQL Editor**, ejecuta **en orden** las migraciones de
+   [`supabase/migrations/`](supabase/migrations/):
+   - `0001_phase1_init.sql`: tablas base (`profiles`, `drink_types`,
+     `consumption_logs`), **RLS**, trigger de creación de perfil y seed del
+     catálogo de bebidas.
+   - `0002_phase2_social.sql`: amistades y feed (`friendships`, `posts`,
+     `post_likes`, `post_comments`), su **RLS**, el **bucket privado**
+     `post-photos` para las fotos y la activación de **Realtime**.
 3. (Opcional, recomendado para pruebas rápidas) En **Authentication →
    Providers → Email**, desactiva *"Confirm email"* para poder entrar sin
    confirmar el correo.
@@ -132,17 +135,20 @@ orígenes desconocidos"* para instalarlo.
 
 ```
 app/                      # Rutas (expo-router)
-  _layout.tsx             # Providers globales + gate de auth
+  _layout.tsx             # Providers globales + gate de auth (Stack raíz)
   (auth)/                 # Onboarding, login, registro (+ gate +18)
-  (tabs)/                 # Registrar · Stats · Perfil
+  (tabs)/                 # Feed · Registrar · Stats · Perfil
+  post/new.tsx            # Crear publicación (modal, cámara/galería)
+  post/[id].tsx           # Detalle de publicación + comentarios
+  friends.tsx             # Buscar/añadir amigos y solicitudes
 src/
-  components/             # Button, TextField, Card, DrinkChip, BarChart...
+  components/             # Button, Card, Avatar, PostCard, DrinkChip, BarChart...
   context/AuthProvider    # Sesión de Supabase en contexto
-  hooks/                  # useConsumptions, useDrinkTypes, useProfile
-  lib/                    # supabase, queryClient, stats
+  hooks/                  # useConsumptions, useFeed, useFriends, usePostComments...
+  lib/                    # supabase, queryClient, storage, stats, format
   theme/colors.ts         # Tokens de marca
   types/database.ts       # Tipos de la BD
-supabase/migrations/      # SQL con esquema + RLS + seed
+supabase/migrations/      # SQL con esquema + RLS + seed + Storage + Realtime
 scripts/gen-assets.js     # Genera icono/splash placeholder
 ```
 
@@ -150,7 +156,11 @@ scripts/gen-assets.js     # Genera icono/splash placeholder
 
 ## 🔒 Privacidad y seguridad
 
-- App **privada**: cada usuario solo ve sus propios registros gracias a **RLS**.
+- App **privada**: cada usuario solo ve sus registros, y en el feed solo sus
+  publicaciones y las de sus **amigos** (todo impuesto por **RLS**).
+- **Fotos en bucket privado** (`post-photos`): se suben a la carpeta del usuario
+  y se sirven con **URLs firmadas** temporales; solo el autor y sus amigos
+  pueden generarlas. Se pide **permiso de cámara/galería** antes de usarlas.
 - Sesión persistida de forma cifrada con `expo-secure-store`.
 - **Gate +18** en el registro (fecha de nacimiento + confirmación).
 - Avisos de **consumo responsable** repartidos por la app sin estorbar.
@@ -164,7 +174,8 @@ scripts/gen-assets.js     # Genera icono/splash placeholder
 
 - [x] **Fase 1 (MVP):** Auth + perfil + registro de consumiciones +
       estadísticas personales + APK.
-- [ ] **Fase 2:** Amigos + feed con fotos (likes/comentarios).
+- [x] **Fase 2:** Amigos (solicitud/aceptación) + feed con fotos
+      (likes/comentarios) en vivo con Realtime.
 - [ ] **Fase 3:** Eventos (públicos/privados) + equipos/parejas/tríos + stats
       por evento.
 - [ ] **Fase 4:** Pulido de UI/marca, gráficas, rendimiento y notificaciones.

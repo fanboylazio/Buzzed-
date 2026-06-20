@@ -6,7 +6,7 @@
  * se entra a las pestañas principales.
  */
 import { useEffect } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -43,7 +43,41 @@ function AuthGate() {
     );
   }
 
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      {/* Crear publicación: se presenta como modal. */}
+      <Stack.Screen name="post/new" options={{ presentation: 'modal' }} />
+      {/* Detalle de publicación con cabecera oscura. */}
+      <Stack.Screen
+        name="post/[id]"
+        options={{
+          headerShown: true,
+          title: 'Publicación',
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { color: colors.text },
+        }}
+      />
+      {/* Amigos: cabecera oscura. */}
+      <Stack.Screen
+        name="friends"
+        options={{
+          headerShown: true,
+          title: 'Amigos',
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { color: colors.text },
+        }}
+      />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {

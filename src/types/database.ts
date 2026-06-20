@@ -1,9 +1,9 @@
 /**
  * Tipos de la base de datos (Supabase / Postgres).
  *
- * Tipado a mano para Fase 1 (las tablas avanzadas se incluyen para que el
- * cliente quede preparado, pero la app solo usa profiles, drink_types y
- * consumption_logs en esta fase). En el futuro se puede regenerar con:
+ * Tipado a mano. Cubre Fase 1 (profiles, drink_types, consumption_logs) y
+ * Fase 2 (friendships, posts, post_likes, post_comments). En el futuro se
+ * puede regenerar con:
  *   supabase gen types typescript --project-id <id> > src/types/database.ts
  */
 
@@ -67,6 +67,58 @@ export type EventRow = {
   created_at: string;
 };
 
+// --- Fase 2: amistades y feed social ---------------------------------------
+
+export type Friendship = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: FriendshipStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Post = {
+  id: string;
+  autor_id: string;
+  evento_id: string | null;
+  foto_path: string; // ruta en Storage (se firma para obtener la URL)
+  texto: string | null;
+  created_at: string;
+};
+
+export type PostLike = {
+  post_id: string;
+  usuario_id: string;
+  created_at: string;
+};
+
+export type PostComment = {
+  id: string;
+  post_id: string;
+  autor_id: string;
+  texto: string;
+  created_at: string;
+};
+
+/** Resumen de perfil para listas (amigos, autores, etc.). */
+export type ProfileSummary = Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+
+/** Publicación enriquecida para el feed (autor + métricas calculadas). */
+export type FeedPost = Post & {
+  autor: ProfileSummary;
+  likeCount: number;
+  likedByMe: boolean;
+  commentCount: number;
+  /** URL firmada lista para mostrar la imagen (se resuelve aparte). */
+  fotoUrl?: string | null;
+};
+
+/** Comentario con su autor resuelto. */
+export type CommentWithAuthor = PostComment & {
+  autor: ProfileSummary;
+};
+
 /**
  * Tipo "Database" en el formato que espera supabase-js.
  * Solo se detallan las tablas usadas en Fase 1; el resto puede ampliarse.
@@ -102,6 +154,42 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<EventRow>;
+        Relationships: [];
+      };
+      friendships: {
+        Row: Friendship;
+        Insert: Omit<Friendship, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Friendship>;
+        Relationships: [];
+      };
+      posts: {
+        Row: Post;
+        Insert: Omit<Post, 'id' | 'created_at' | 'evento_id' | 'texto'> & {
+          id?: string;
+          created_at?: string;
+          evento_id?: string | null;
+          texto?: string | null;
+        };
+        Update: Partial<Post>;
+        Relationships: [];
+      };
+      post_likes: {
+        Row: PostLike;
+        Insert: Omit<PostLike, 'created_at'> & { created_at?: string };
+        Update: Partial<PostLike>;
+        Relationships: [];
+      };
+      post_comments: {
+        Row: PostComment;
+        Insert: Omit<PostComment, 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<PostComment>;
         Relationships: [];
       };
     };

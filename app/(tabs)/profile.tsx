@@ -1,11 +1,12 @@
 /**
- * Pantalla "Perfil" (Fase 1).
+ * Pantalla "Perfil" (Fases 1-2).
  *
- * Muestra los datos de la cuenta, permite editar el nombre de usuario y cerrar
- * sesión. (Amigos y avatar con subida de imagen llegan en fases posteriores.)
+ * Muestra los datos de la cuenta, el acceso a Amigos, permite editar el nombre
+ * de usuario y cerrar sesión.
  */
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { Card } from '@/components/Card';
@@ -14,14 +15,17 @@ import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthProvider';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { useConsumptions } from '@/hooks/useConsumptions';
+import { useFriendsDerived } from '@/hooks/useFriends';
 import { totalUnits } from '@/lib/stats';
 import { colors, spacing, fontSize, radius } from '@/theme/colors';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const profile = useProfile();
   const updateProfile = useUpdateProfile();
   const consumptions = useConsumptions();
+  const { friends } = useFriendsDerived();
 
   const [username, setUsername] = useState('');
   const [saved, setSaved] = useState(false);
@@ -72,6 +76,20 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>consumiciones registradas en total</Text>
           </View>
         </Card>
+
+        {/* Acceso a Amigos */}
+        <Pressable onPress={() => router.push('/friends')}>
+          <Card style={styles.navRow}>
+            <Ionicons name="people" size={24} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.navTitle}>Amigos</Text>
+              <Text style={styles.navSub}>
+                {friends.length} {friends.length === 1 ? 'amigo' : 'amigos'} en tu cuadrilla
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </Card>
+        </Pressable>
 
         {/* Edición de nombre de usuario */}
         <Card style={{ gap: spacing.md }}>
@@ -142,6 +160,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  navTitle: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: '700',
+  },
+  navSub: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
   },
   statValue: {
     color: colors.text,
