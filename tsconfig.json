@@ -1,0 +1,21 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    // "bundler" alinea la resolución de TypeScript con la de Metro y permite
+    // leer los "exports" modernos de paquetes como @tanstack/react-query y
+    // @supabase/supabase-js (sin esto, la inferencia de tipos cae a "any").
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}
