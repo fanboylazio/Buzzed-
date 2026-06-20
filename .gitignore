@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Builds nativas
+android/
+ios/
+*.apk
+*.aab
+
+# Variables de entorno (¡nunca subir claves reales!)
+.env
+.env.local
+.env.*.local
+
+# Metro / caché
+.metro-health-check*
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS / editores
+.DS_Store
+*.pem
+.idea/
+.vscode/

@@ -1,0 +1,166 @@
+/**
+ * Pantalla "Perfil" (Fase 1).
+ *
+ * Muestra los datos de la cuenta, permite editar el nombre de usuario y cerrar
+ * sesión. (Amigos y avatar con subida de imagen llegan en fases posteriores.)
+ */
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Screen } from '@/components/Screen';
+import { Card } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { TextField } from '@/components/TextField';
+import { useAuth } from '@/context/AuthProvider';
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { useConsumptions } from '@/hooks/useConsumptions';
+import { totalUnits } from '@/lib/stats';
+import { colors, spacing, fontSize, radius } from '@/theme/colors';
+
+export default function ProfileScreen() {
+  const { user, signOut } = useAuth();
+  const profile = useProfile();
+  const updateProfile = useUpdateProfile();
+  const consumptions = useConsumptions();
+
+  const [username, setUsername] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  // Sincroniza el input cuando llega el perfil.
+  useEffect(() => {
+    if (profile.data?.username) setUsername(profile.data.username);
+  }, [profile.data?.username]);
+
+  const totalLifetime = totalUnits(consumptions.data ?? []);
+  const initial = (profile.data?.username ?? user?.email ?? '?')
+    .charAt(0)
+    .toUpperCase();
+
+  async function handleSave() {
+    setSaved(false);
+    if (username.trim().length < 3) return;
+    await updateProfile.mutateAsync({ username: username.trim() });
+    setSaved(true);
+  }
+
+  return (
+    <Screen padded={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Cabecera de perfil */}
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
+          {profile.isLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <>
+              <Text style={styles.name}>{profile.data?.username ?? 'Sin nombre'}</Text>
+              <Text style={styles.email}>{user?.email}</Text>
+            </>
+          )}
+        </View>
+
+        {/* Estadística total de la cuenta */}
+        <Card style={styles.statCard}>
+          <Ionicons name="albums-outline" size={24} color={colors.primary} />
+          <View>
+            <Text style={styles.statValue}>{totalLifetime}</Text>
+            <Text style={styles.statLabel}>consumiciones registradas en total</Text>
+          </View>
+        </Card>
+
+        {/* Edición de nombre de usuario */}
+        <Card style={{ gap: spacing.md }}>
+          <Text style={styles.sectionTitle}>Editar perfil</Text>
+          <TextField
+            label="Nombre de usuario"
+            value={username}
+            onChangeText={(t) => {
+              setUsername(t);
+              setSaved(false);
+            }}
+            autoCapitalize="none"
+          />
+          <Button
+            label={saved ? 'Guardado ✓' : 'Guardar cambios'}
+            onPress={handleSave}
+            loading={updateProfile.isPending}
+            variant={saved ? 'secondary' : 'primary'}
+          />
+        </Card>
+
+        <Button label="Cerrar sesión" variant="danger" onPress={signOut} />
+
+        <Text style={styles.footer}>
+          Buzzed · app privada para tu cuadrilla · solo +18
+        </Text>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: {
+    padding: spacing.lg,
+    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  header: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: colors.primary,
+    fontSize: fontSize.display,
+    fontWeight: '800',
+  },
+  name: {
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+  },
+  email: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+  },
+  statCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  statValue: {
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+  },
+  statLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+  },
+  footer: {
+    color: colors.textFaint,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+});
